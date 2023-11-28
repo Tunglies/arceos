@@ -16,7 +16,7 @@ qemu_args-x86_64 := \
 
 qemu_args-riscv64 := \
   -machine virt \
-  -bios default \
+  -bios /home/ubuntu/os-env/qemu-7.0.0/pc-bios/opensbi-riscv64-generic-fw_dynamic.bin \
   -kernel $(OUT_BIN)
 
 qemu_args-aarch64 := \
