@@ -16,8 +16,9 @@ qemu_args-x86_64 := \
 
 qemu_args-riscv64 := \
   -machine virt \
-  -bios default \
-  -kernel $(OUT_BIN)
+  -bios /home/ubuntu/os-env/qemu-7.0.0/pc-bios/opensbi-riscv64-generic-fw_dynamic.bin \
+  -kernel $(OUT_BIN) \
+  -drive if=pflash,file=$(CURDIR)/payload/apps.bin,format=raw,unit=1
 
 qemu_args-aarch64 := \
   -cpu cortex-a72 \
