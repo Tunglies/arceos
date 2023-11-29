@@ -8,3 +8,4 @@ authors = ["Tunglies <tunglies@outlook.com>"]
 
 [dependencies]
 axstd = { path = "../../ulib/axstd", optional = true }
+lazy_static = { version = "1.4", features = ["spin_no_std"] }
