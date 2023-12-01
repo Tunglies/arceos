@@ -8,3 +8,7 @@ authors = ["Tunglies <tunglies@outlook.com>"]
 
 [dependencies]
 axstd = { path = "../../ulib/axstd", optional = true }
+axconfig = { path = "../../modules/axconfig" }
+
+[target.'cfg(any(target_arch = "riscv32", target_arch = "riscv64"))'.dependencies]
+riscv = "0.10"

@@ -29,6 +29,8 @@ SECTIONS
         _sdata = .;
         *(.data.boot_page_table)
         . = ALIGN(4K);
+        *(.data.boot_page_table)
+        . = ALIGN(4K);
         *(.data .data.*)
         *(.sdata .sdata.*)
         *(.got .got.*)
