@@ -33,7 +33,7 @@ LOG ?= warn
 V ?=
 
 # App options
-A ?= apps/ex5
+A ?= apps/memtest
 APP ?= $(A)
 FEATURES ?=
 APP_FEATURES ?=
