@@ -17,7 +17,8 @@ static mut ABI_TABLE: [usize; 16] = [0; 16];
 
 const PLASH_START: usize = 0x22000000;
 const MAX_BLOCK: isize = 32 - 1;
-const RUN_START: usize = 0xffff_ffc0_8010_0000;
+// const RUN_START: usize = 0xffff_ffc0_8010_0000;
+const RUN_START: usize = 0x4010_0000;
 
 fn register_abi(num: usize, handle: usize) {
     unsafe { ABI_TABLE[num] = handle; }
@@ -72,8 +73,6 @@ impl AppManager {
                 self.apps_offset[total_apps - 1] = offset;
                 self.apps_fake_length[total_apps - 1] = search_length;
                 self.apps_true_length[total_apps - 1] = ensure_length(load_code).len();
-            } else {
-                break
             }
             count_length += 1;
         }
@@ -104,35 +103,6 @@ impl AppManager {
     }
 }
 
-#[cfg_attr(feature = "axstd", no_mangle)]
-fn main() {
-    register_abi(SYS_HELLO, abi_hello as usize);
-    register_abi(SYS_PUTCHAR, abi_putchar as usize);
-    register_abi(SYS_TERMINATE, abi_shutdown as usize);
-
-    let mut app_manager = AppManager::new();
-    app_manager.search_app();
-    let apps_num = app_manager.apps_num;
-    for _ in 0..apps_num {
-        let load_code = app_manager.get_load_true();
-        println!("load code: {:?}", load_code);
-        let run_code =
-            unsafe { core::slice::from_raw_parts_mut(RUN_START as *mut u8, load_code.len()) };
-        run_code.fill(0);        
-        run_code.copy_from_slice(load_code);
-        println!("run code {:?}; address [{:?}]", run_code, run_code.as_ptr());
-
-        unsafe { core::arch::asm!("
-            la      a7, {abi_table}
-            li      t2, {run_start}
-            jalr    t2
-            ",
-            run_start = const RUN_START,
-            abi_table = sym ABI_TABLE,
-        )}
-    }
-}
-
 fn get_code(apps_start: *const u8, offset: isize, len: usize) -> &'static [u8] {
     unsafe { core::slice::from_raw_parts(apps_start.offset(offset * 1024 * 1024), len) }
 }
@@ -153,8 +123,6 @@ fn is_all_zeros(slice: &[u8]) -> bool {
     slice.iter().all(|&x| x == 0)
 }
 
-#[cfg_attr(feature = "axstd", no_mangle)]
-
 #[inline]
 fn bytes_to_usize(bytes: &[u8]) -> usize {
     if bytes.len() == 8 {
@@ -164,4 +132,61 @@ fn bytes_to_usize(bytes: &[u8]) -> usize {
         result_bytes[..bytes.len()].copy_from_slice(&bytes);
         usize::from_be_bytes(result_bytes)
     }
+}
+
+
+#[cfg_attr(feature = "axstd", no_mangle)]
+fn main() {
+    register_abi(SYS_HELLO, abi_hello as usize);
+    register_abi(SYS_PUTCHAR, abi_putchar as usize);
+    register_abi(SYS_TERMINATE, abi_shutdown as usize);
+
+    let mut app_manager = AppManager::new();
+    app_manager.search_app();
+    let apps_num = app_manager.apps_num;
+    println!("Total {:?} apps", apps_num);
+    for _ in 0..apps_num {
+        let load_code = app_manager.get_load_true();
+        unsafe { init_app_page_table(); }
+        unsafe { switch_app_aspace(); }
+        println!("load code: {:?}", load_code);
+        let run_code =
+            unsafe { core::slice::from_raw_parts_mut(RUN_START as *mut u8, load_code.len()) };
+        run_code.fill(0);        
+        run_code.copy_from_slice(load_code);
+        println!("run code {:?}; address [{:?}]", run_code, run_code.as_ptr());
+
+        unsafe { core::arch::asm!("
+            la      a7, {abi_table}
+            li      t2, {run_start}
+            jalr    t2
+            ",
+            run_start = const RUN_START,
+            abi_table = sym ABI_TABLE,
+        )}
+    }
+}
+
+#[link_section = ".data.app_page_table"]
+static mut APP_PT_SV39: [u64; 512] = [0; 512];
+
+unsafe fn init_app_page_table() {
+    // 0x8000_0000..0xc000_0000, VRWX_GAD, 1G block
+    APP_PT_SV39[2] = (0x80000 << 10) | 0xef;
+    // 0xffff_ffc0_8000_0000..0xffff_ffc0_c000_0000, VRWX_GAD, 1G block
+    APP_PT_SV39[0x102] = (0x80000 << 10) | 0xef;
+
+    // 0x0000_0000..0x4000_0000, VRWX_GAD, 1G block
+    APP_PT_SV39[0] = (0x00000 << 10) | 0xef;
+
+    // For App aspace!
+    // 0x4000_0000..0x8000_0000, VRWX_GAD, 1G block
+    APP_PT_SV39[1] = (0x80000 << 10) | 0xef;
+}
+
+unsafe fn switch_app_aspace() {
+    use riscv::register::satp;
+    let page_table_root = APP_PT_SV39.as_ptr() as usize - axconfig::PHYS_VIRT_OFFSET;
+    satp::set(satp::Mode::Sv39, 0, page_table_root >> 12);
+    riscv::asm::sfence_vma_all();
 }
