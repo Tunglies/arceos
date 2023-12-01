@@ -1,0 +1,5 @@
+[package]
+name = "ex5"
+
+[dependencies]
+axstd = { path = "../../ulib/axstd", features = ["alloc", "multitask", "irq"], optional = true }
