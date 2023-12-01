@@ -43,7 +43,7 @@ impl GlobalAllocator {
         self.inner.lock().init(start_vaddr, size);
     }
 
-    pub fn add_memory(&self, start_vaddr: usize, size: usize) -> AllocResult {
+    pub fn add_memory(&self, _start_vaddr: usize, _size: usize) -> AllocResult {
         unimplemented!()
     }
 

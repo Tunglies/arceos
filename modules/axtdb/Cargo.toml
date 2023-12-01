@@ -1,0 +1,5 @@
+[package]
+name = "axtdb"
+
+[dependencies]
+fdt = "0.1.5"
