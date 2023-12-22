@@ -25,7 +25,7 @@
 #     - `GW`: Gateway IPv4 address (default is 10.0.2.2 for QEMU user netdev)
 
 # General options
-ARCH ?= x86_64
+ARCH ?= riscv64
 PLATFORM ?=
 SMP ?= 1
 MODE ?= release
@@ -33,7 +33,7 @@ LOG ?= warn
 V ?=
 
 # App options
-A ?= apps/helloworld
+A ?= apps/loader
 APP ?= $(A)
 FEATURES ?=
 APP_FEATURES ?=
@@ -106,7 +106,6 @@ else ifeq ($(ARCH), aarch64)
 else
   $(error "ARCH" must be one of "x86_64", "riscv64", or "aarch64")
 endif
-
 export AX_ARCH=$(ARCH)
 export AX_PLATFORM=$(PLATFORM_NAME)
 export AX_SMP=$(SMP)
